@@ -1,0 +1,17 @@
+@import 'variables';
+
+html, body, #app{
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+
+@import "./fontawesome/fontawesome.scss";
+@import "./fontawesome/solid.scss";
+@import "./fontawesome/brands.scss";
+@import "./fontawesome/solid.scss";
+@import "./fontawesome/sharp-light.scss";
+@import "./fontawesome/sharp-regular.scss";
+@import "./fontawesome/sharp-solid.scss";
+
+@import 'reset';

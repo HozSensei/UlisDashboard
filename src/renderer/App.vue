@@ -1,32 +1,191 @@
-<script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
-
-window.electronAPI.sendMessage('Hello from App.vue!');
-</script>
-
 <template>
-  <div>
-    <a href="https://vitejs.dev" target="_blank">
-      <img src="/vite.svg" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://vuejs.org/" target="_blank">
-      <img src="/vue.svg" class="logo vue" alt="Vue logo" />
-    </a>
-  </div>
-  <HelloWorld msg="Vite + Vue" />
+  <section class="container">
+    <WindowActionsComponent></WindowActionsComponent>
+    <section class="mainApp">
+      <PingSummaryComponent :nbrSucces="nbrSucces" :nbrError="nbrError" :testTotal="listApp.length > 0 ? listApp.length : '-'" @filter="changeFilter"></PingSummaryComponent>
+      <div class="list-app">
+        <h2>
+            <div class="flex">
+                <span>Applications</span>
+                <div class="search"><input type="text" v-model="searchText" placeholder="Recherche..."></div>
+            </div>
+            <button @click="openGestion = true">Gestion</button>
+        </h2>
+        <div class="loadingContainer" v-if="loading">
+            <LoadingComponent></LoadingComponent>
+        </div>
+        <template v-else>
+            <div class="no-data" v-if="listFiltered.length == 0">
+                <h3>Aucune application trouvée</h3>
+            </div>
+            <ItemAppComponent v-for="item in listFiltered" :item="item" v-else></ItemAppComponent>
+        </template>
+        
+      </div>
+    </section>
+
+    <GestionModalComponent v-if="openGestion" @close="openGestion = false" :data="config"></GestionModalComponent>
+    
+  </section>
 </template>
 
-<style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+
+<script lang="ts">
+
+import PingSummaryComponent from './components/PingSummary.vue'
+import WindowActionsComponent from './components/WindowActions.vue'
+import ItemAppComponent from './components/itemApp.vue'
+import GestionModalComponent from './components/GestionModal.vue'
+import LoadingComponent from './components/LoadingComponent.vue';
+
+export default {
+  components:{ WindowActionsComponent, PingSummaryComponent, ItemAppComponent, GestionModalComponent, LoadingComponent },
+  setup() {
+  },
+  data() {
+      return {
+        listApp: [],
+        config: null,
+        openGestion: false,
+        loading: true,
+        filterApp: 'all',
+        searchText: ''
+      };
+  },
+  methods: {
+    async pingApps(){
+        console.log('startPing')
+        await window.electronAPI.ping().then(response => {
+            console.log('ping finish', response)
+            this.loading = false
+            this.listApp = response.data
+            setTimeout(() => {
+                this.pingApps()
+            }, 60000);
+        })
+    },
+    changeFilter(type){
+        this.filterApp = type;
+    }
+  },
+  computed: {
+    nbrSucces(){
+        if(this.listApp.length > 0){
+            return this.listApp.filter(e => e.status == 200) ? this.listApp.filter(e => e.status == 200).length : 0
+        }else{
+            return '-'
+        }
+    },
+    nbrError(){
+        if(this.listApp.length > 0){
+            return this.listApp.filter(e => e.status != 200) ? this.listApp.filter(e => e.status != 200).length : 0
+        }else{
+            return '-'
+        }
+    },
+    listFiltered(){
+        let orderList = this.listApp.sort((a, b) => a.title.localeCompare(b.title));
+        let toReturn = orderList
+        if(this.filterApp == 'all'){
+            toReturn = orderList
+        }else if(this.filterApp == 'error'){
+            toReturn = orderList.filter(e => e.status != 200)
+        }else if(this.filterApp == 'success'){
+            toReturn = orderList.filter(e => e.status == 200)
+        }else{
+            toReturn = orderList
+        }
+        if(this.searchText != ''){
+            toReturn = toReturn.filter(e => e.title.toLowerCase().includes(this.searchText.toLowerCase()))
+        }
+        return toReturn
+    }
+  },
+  watch: {},
+  async mounted() {
+        const load = await window.electronAPI.load()
+        this.config = load;
+        await this.pingApps();
+  }
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+</script>
+
+<style lang="scss" scoped>
+
+@import './scss/variables';
+
+.container{
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
 }
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
+.loadingContainer{
+    height: 300px;
 }
+.mainApp{
+  position: relative;
+  z-index: 1;
+  top:30px;
+  height: calc(100% - 30px);
+  overflow-y: scroll;
+}
+
+.no-data{
+    h3{
+        font-size: 18px;
+        padding: 20px 0;
+    }
+}
+
+.list-app{
+  width:90%;
+  margin:25px auto;
+  padding: 50px;
+  border-radius: 25px;
+  background-color: rgba(0,0,0,0.2);
+  h2{
+    font-weight: 800;
+    font-size:36px;
+    margin-bottom:25px;
+    color:white;
+    padding-left:25px;
+    border-left:5px solid $contrast;
+    display: flex;
+    justify-content: space-between;
+    .flex{
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+    button{
+      cursor: pointer;
+      background:none;
+      border:0;
+      background-color: $contrast;
+      padding: 10px 20px;
+      text-transform: uppercase;
+      color:white;
+      letter-spacing: 3px;
+      border-radius: 10px;
+    }
+    .search{
+        input{
+            border:0;
+            background-color: $bg_secondary;
+            border-radius: 5px;
+            padding: 10px 15px;
+            font-size: 15px;
+            color:white;
+            &:focus{
+                outline: none;
+            }
+            &::placeholder{
+                color:rgba(255,255,255,0.5);
+            }
+        }
+    }
+  }
+  
+}
+
 </style>

@@ -1,5 +1,5 @@
 {
-    "appId": "com.electron.app",
+    "appId": "com.ulis.dashboard",
     "directories": {
         "output": "dist"
     },
@@ -7,10 +7,11 @@
         "oneClick": false,
         "perMachine": false,
         "allowToChangeInstallationDirectory": true,
-        "shortcutName": "Electron App"
+        "shortcutName": "Ulis Dashboard"
     },
     "win": {
-        "target": "nsis"
+        "target": "nsis",
+        "icon": "./src/main/static/icon.png"
     },
     "linux":  {
         "target": ["snap"]
