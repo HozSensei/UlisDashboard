@@ -2,17 +2,24 @@ import axios from 'axios';
 import {app, BrowserWindow, ipcMain, session, shell, nativeImage, Notification } from 'electron';
 import {join} from 'path';
 import * as fs from 'fs';
+import * as https from 'https';
 
 let mainWindow;
 let userDataConfig = join(app.getPath('userData'), 'UlisDashboardConfig.json');
 const icon = app.getAppPath() + 'static/icon.png';
+
+// Configuration axios pour ignorer les certificats SSL
+const axiosInstance = axios.create({
+  httpsAgent: new https.Agent({
+    rejectUnauthorized: false
+  })
+});
 if (process.platform === 'win32')
 {
     app.setAppUserModelId('Ulis Dashboard');
 }
 
 function createWindow () {
-  console.log(__dirname);
   mainWindow = new BrowserWindow({
     width: 1800,
     height: 900,
@@ -141,7 +148,7 @@ async function getAllMyulisStatus() {
   let dataToReturn:any = JSON.parse(fs.readFileSync(userDataConfig, 'utf8'))
   let returnData:any = [];
   await Promise.all(dataToReturn.listApps.map(entry =>
-    axios.get(entry.url + '/version').then(response => {
+    axiosInstance.get(entry.url + '/version').then(response => {
         returnData.push({ status: response.status, url: entry.url, title: entry.title, response: response.data, notif: entry.notif });
     }).catch(error => {
         returnData.push({ status: error.response ? error.response.status : 500, url: entry.url, title: entry.title, response: error.message, notif: entry.notif });
