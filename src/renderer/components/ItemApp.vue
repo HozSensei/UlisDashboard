@@ -1,7 +1,10 @@
 <template>
   <div class="item">
     <h3 @click="toggle = !toggle"><span class="status" :class="statusClass">{{ item.status }}</span>{{ item.title }}</h3>
-    <a :href="item.url" target="_blank">{{ item.url }}</a>
+    <div class="right">
+      <p class="lastBuild">Dernier build: <strong>{{item.response['Date build'] ? item.response['Date build'].slice(0, -3) : 'N/A'}}</strong></p>
+      <a :href="item.url" target="_blank"><i class="fa-solid fa-link"></i></a>
+    </div>
     <ul class="details" v-if="item.status == 200" v-show="toggle">
       <li v-for="(detail, key) in item.response">
         <template v-if="key == 'commit'">
@@ -81,9 +84,21 @@ export default {
         }
       }
     }
-    a{
-      color: #3d95dd;
-      text-decoration: none;
+    .right{
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      a{
+        color: #3d95dd;
+        text-decoration: none;
+      }
+      .lastBuild{
+        text-align: right;
+        color:$text_color_light;
+        strong{
+          color:white;
+        }
+      }
     }
     .details{
       width: 100%;

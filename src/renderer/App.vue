@@ -2,7 +2,7 @@
   <section class="container">
     <WindowActionsComponent></WindowActionsComponent>
     <section class="mainApp">
-      <PingSummaryComponent :nbrSucces="nbrSucces" :nbrError="nbrError" :testTotal="listApp.length > 0 ? listApp.length : '-'" @filter="changeFilter"></PingSummaryComponent>
+      <PingSummaryComponent :lastUpdate="lastUpdate" :nbrSucces="nbrSucces" :nbrError="nbrError" :testTotal="listApp.length > 0 ? listApp.length : '-'" @filter="changeFilter"></PingSummaryComponent>
       <div class="list-app">
         <h2>
             <div class="flex">
@@ -34,9 +34,17 @@
 
 import PingSummaryComponent from './components/PingSummary.vue'
 import WindowActionsComponent from './components/WindowActions.vue'
-import ItemAppComponent from './components/itemApp.vue'
+import ItemAppComponent from './components/ItemApp.vue'
 import GestionModalComponent from './components/GestionModal.vue'
 import LoadingComponent from './components/LoadingComponent.vue';
+
+interface ListApp {
+    status: number, 
+    url: string, 
+    title: string, 
+    response: string, 
+    notif: boolean 
+}
 
 export default {
   components:{ WindowActionsComponent, PingSummaryComponent, ItemAppComponent, GestionModalComponent, LoadingComponent },
@@ -44,25 +52,29 @@ export default {
   },
   data() {
       return {
-        listApp: [],
+        listApp: [] as ListApp[],
         config: null,
         openGestion: false,
         loading: true,
         filterApp: 'all',
-        searchText: ''
+        searchText: '',
+        lastUpdate: null as null | Date
       };
   },
   methods: {
     async pingApps(){
-        console.log('startPing')
-        await window.electronAPI.ping().then(response => {
-            console.log('ping finish', response)
+        try{
+            const response = await window.electronAPI.ping()
             this.loading = false
             this.listApp = response.data
+            this.lastUpdate = new Date()
             setTimeout(() => {
                 this.pingApps()
             }, 60000);
-        })
+        }
+        catch(e){
+            console.log(e)
+        }   
     },
     changeFilter(type){
         this.filterApp = type;

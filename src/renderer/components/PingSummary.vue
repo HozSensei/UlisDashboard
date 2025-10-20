@@ -1,6 +1,9 @@
 <template>
   <div class="summary">
-    <h2>Résumé</h2>
+    <h2>
+      <span>Résumé</span>
+      <span class="date">(Dernière mise à jour : <strong>{{ formattedDate }}</strong>)</span>
+    </h2>
     <div class="container">
       <div class="item list" @click="filterList('all')" :class="{active: filterSelect == 'all'}">
         <div class="icon"><i class="fa-sharp fa-light fa-browser"></i></div>
@@ -32,7 +35,7 @@
 export default {
   components:{},
   emits: ['filter'],
-  props:['nbrSucces', 'nbrError', 'testTotal'],
+  props:['nbrSucces', 'nbrError', 'testTotal', 'lastUpdate'],
   setup() {
   },
   data() {
@@ -46,7 +49,18 @@ export default {
         this.$emit('filter', type);
     }
   },
-  computed: {},
+  computed: {
+    formattedDate() {
+      if (!this.lastUpdate) return '';
+      return this.lastUpdate.toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+  },
   watch: {},
   mounted() {
     
@@ -70,6 +84,17 @@ export default {
     color:white;
     padding-left:25px;
     border-left:5px solid $contrast;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    .date{
+      font-size: 14px;
+      font-weight: 300;
+      color:$text_color_light;
+      strong{
+        font-weight: 500;
+      }
+    }
   }
 }
 

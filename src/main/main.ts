@@ -3,6 +3,7 @@ import {app, BrowserWindow, ipcMain, session, shell, nativeImage, Notification }
 import {join} from 'path';
 import * as fs from 'fs';
 import * as https from 'https';
+import { timeStamp } from 'console';
 
 let mainWindow;
 let userDataConfig = join(app.getPath('userData'), 'UlisDashboardConfig.json');
@@ -144,12 +145,34 @@ ipcMain.handle('load', async () => {
 })
 
 async function getAllMyulisStatus() {
-  console.log('init ping')
   let dataToReturn:any = JSON.parse(fs.readFileSync(userDataConfig, 'utf8'))
   let returnData:any = [];
   await Promise.all(dataToReturn.listApps.map(entry =>
     axiosInstance.get(entry.url + '/version').then(response => {
-        returnData.push({ status: response.status, url: entry.url, title: entry.title, response: response.data, notif: entry.notif });
+        
+        // Vérifier si la réponse contient la page d'erreur de maintenance
+        const responseText = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+        const isMaintenancePage = responseText.includes('Maintenance du site en cours') || 
+                                 responseText.includes('Une maintenance du site est en cours') ||
+                                 responseText.includes('Nous revenons rapidement') ||
+                                 responseText.includes('Merci de réessayer plus tard') ||
+                                 responseText.includes('errors/503.html') ||
+                                 responseText.includes('errors/502.html') ||
+                                 responseText.includes('errors/50X.html');
+        
+        // Vérifier aussi si c'est du HTML au lieu de JSON
+        const contentType = response.headers['content-type'] || '';
+        const isHtmlResponse = contentType.includes('text/html');
+        
+        const actualStatus = (isMaintenancePage || isHtmlResponse) ? 503 : response.status;
+        
+        returnData.push({ 
+          status: actualStatus, 
+          url: entry.url, 
+          title: entry.title, 
+          response: actualStatus !== 200 ? 'Une erreur a été détecté' : response.data, 
+          notif: entry.notif 
+        });
     }).catch(error => {
         returnData.push({ status: error.response ? error.response.status : 500, url: entry.url, title: entry.title, response: error.message, notif: entry.notif });
     })
